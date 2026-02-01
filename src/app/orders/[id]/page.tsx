@@ -165,17 +165,16 @@ export default function OrderDetailPage() {
           <div class="info-section">
             <div class="info-box">
               <h3>Bill To</h3>
-              ${
-                order.address
-                  ? `
+              ${order.address
+        ? `
                 <p><strong>${order.address.label || "Delivery Address"}</strong></p>
                 <p>${order.address.addressLine1}</p>
                 ${order.address.addressLine2 ? `<p>${order.address.addressLine2}</p>` : ""}
                 <p>${order.address.city}, ${order.address.state} ${order.address.postalCode}</p>
                 <p>${order.address.country}</p>
               `
-                  : "<p>Self Pickup</p>"
-              }
+        : "<p>Self Pickup</p>"
+      }
             </div>
             <div class="info-box">
               <h3>Order Details</h3>
@@ -197,8 +196,8 @@ export default function OrderDetailPage() {
             </thead>
             <tbody>
               ${order.items
-                .map(
-                  (item) => `
+        .map(
+          (item) => `
                 <tr>
                   <td>
                     <strong>${item.productName}</strong>
@@ -210,8 +209,8 @@ export default function OrderDetailPage() {
                   <td class="text-right">₹${item.totalPrice.toLocaleString()}</td>
                 </tr>
               `,
-                )
-                .join("")}
+        )
+        .join("")}
             </tbody>
           </table>
 
@@ -224,30 +223,28 @@ export default function OrderDetailPage() {
               <span>Tax (GST 18%)</span>
               <span>₹${order.taxAmount.toLocaleString()}</span>
             </div>
-            ${
-              order.deliveryCharge > 0
-                ? `
+            ${order.deliveryCharge > 0
+        ? `
               <div class="totals-row">
                 <span>Delivery Charge</span>
                 <span>₹${order.deliveryCharge.toLocaleString()}</span>
               </div>
             `
-                : ""
-            }
+        : ""
+      }
             <div class="totals-row">
               <span>Security Deposit</span>
               <span>₹${order.securityDeposit.toLocaleString()}</span>
             </div>
-            ${
-              order.discountAmount > 0
-                ? `
+            ${order.discountAmount > 0
+        ? `
               <div class="totals-row" style="color: #16a34a;">
                 <span>Discount</span>
                 <span>-₹${order.discountAmount.toLocaleString()}</span>
               </div>
             `
-                : ""
-            }
+        : ""
+      }
             <div class="totals-row total">
               <span>Total Amount</span>
               <span>₹${order.totalAmount.toLocaleString()}</span>
@@ -407,9 +404,8 @@ export default function OrderDetailPage() {
                           )}
                           {index < arr.length - 1 && (
                             <div
-                              className={`w-px h-12 ${
-                                item.completed ? "bg-green-300" : "bg-gray-200"
-                              }`}
+                              className={`w-px h-12 ${item.completed ? "bg-green-300" : "bg-gray-200"
+                                }`}
                             />
                           )}
                         </div>
@@ -659,11 +655,10 @@ export default function OrderDetailPage() {
                                   ₹{payment.amount.toLocaleString()}
                                 </p>
                                 <span
-                                  className={`text-xs px-2 py-0.5 rounded capitalize ${
-                                    payment.status === "completed"
+                                  className={`text-xs px-2 py-0.5 rounded capitalize ${payment.status === "completed"
                                       ? "bg-green-100 text-green-800"
                                       : "bg-yellow-100 text-yellow-800"
-                                  }`}
+                                    }`}
                                 >
                                   {payment.status}
                                 </span>

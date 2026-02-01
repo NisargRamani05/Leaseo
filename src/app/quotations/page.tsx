@@ -12,6 +12,8 @@ import {
   XCircle,
   AlertCircle,
   Building2,
+  ArrowRight,
+  Filter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,37 +37,38 @@ import {
 } from "@/actions/orders";
 import { toast } from "sonner";
 import { format, formatDistanceToNow, isPast } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const statusConfig: Record<
   string,
   { bg: string; border: string; text: string; badge: string; icon: any }
 > = {
   SENT: {
-    bg: "bg-blue-50",
+    bg: "bg-blue-500",
     border: "border-blue-200",
     text: "text-blue-700",
-    badge: "bg-blue-100 text-blue-800",
+    badge: "bg-blue-100 text-blue-800 border-blue-200",
     icon: FileText,
   },
   CONFIRMED: {
-    bg: "bg-green-50",
+    bg: "bg-green-500",
     border: "border-green-200",
     text: "text-green-700",
-    badge: "bg-green-100 text-green-800",
+    badge: "bg-green-100 text-green-800 border-green-200",
     icon: CheckCircle,
   },
   CANCELLED: {
-    bg: "bg-red-50",
+    bg: "bg-red-500",
     border: "border-red-200",
     text: "text-red-700",
-    badge: "bg-red-100 text-red-800",
+    badge: "bg-red-100 text-red-800 border-red-200",
     icon: XCircle,
   },
   EXPIRED: {
-    bg: "bg-gray-50",
-    border: "border-gray-200",
-    text: "text-gray-700",
-    badge: "bg-gray-100 text-gray-800",
+    bg: "bg-slate-500",
+    border: "border-slate-200",
+    text: "text-slate-700",
+    badge: "bg-slate-100 text-slate-800 border-slate-200",
     icon: Clock,
   },
 };
@@ -104,7 +107,6 @@ export default function QuotationsPage() {
   };
 
   const handleAcceptAndPay = (quotationId: string) => {
-    // Redirect to payment page
     router.push(`/quotations/payment?id=${quotationId}`);
   };
 
@@ -128,13 +130,11 @@ export default function QuotationsPage() {
       CANCELLED: 0,
       EXPIRED: 0,
     };
-
     quotations.forEach((q) => {
       if (counts[q.status as keyof typeof counts] !== undefined) {
         counts[q.status as keyof typeof counts]++;
       }
     });
-
     return counts;
   };
 
@@ -146,312 +146,185 @@ export default function QuotationsPage() {
       : quotations.filter((q) => q.status === activeTab);
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            Quotations
-          </h1>
-          <p className="mt-2 text-gray-600">
-            View and manage quotations from vendors
-          </p>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans pb-20">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
+        <div className="max-w-[1464px] mx-auto px-6 py-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Quotations</h1>
+              <p className="text-slate-500 dark:text-slate-400 mt-1">
+                Manage proposals and estimates from vendors
+              </p>
+            </div>
+            <Button variant="outline" className="gap-2">
+              <Filter className="h-4 w-4" /> Filter
+            </Button>
+          </div>
         </div>
+      </header>
 
-        {/* Tabs */}
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="space-y-6"
-        >
-          <TabsList className="bg-white border shadow-sm">
-            <TabsTrigger
-              value="all"
-              className="data-[state=active]:bg-gray-100"
-            >
-              All ({counts.all})
-            </TabsTrigger>
-            <TabsTrigger
-              value="SENT"
-              className="data-[state=active]:bg-blue-100"
-            >
-              Pending ({counts.SENT})
-            </TabsTrigger>
-            <TabsTrigger
-              value="CONFIRMED"
-              className="data-[state=active]:bg-green-100"
-            >
-              Accepted ({counts.CONFIRMED})
-            </TabsTrigger>
-            <TabsTrigger
-              value="CANCELLED"
-              className="data-[state=active]:bg-red-100"
-            >
-              Rejected ({counts.CANCELLED})
-            </TabsTrigger>
-            <TabsTrigger
-              value="EXPIRED"
-              className="data-[state=active]:bg-gray-100"
-            >
-              Expired ({counts.EXPIRED})
-            </TabsTrigger>
+      <div className="max-w-[1464px] mx-auto px-6 py-8">
+
+        {/* Custom Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl h-auto flex-wrap">
+            {["all", "SENT", "CONFIRMED", "CANCELLED", "EXPIRED"].map((tab) => (
+              <TabsTrigger
+                key={tab}
+                value={tab}
+                className="flex-1 min-w-[100px] py-2.5 rounded-lg data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white font-medium"
+              >
+                {tab === "all" ? "All" : statusLabels[tab]}
+                <span className="ml-2 text-xs opacity-60 bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded-full">
+                  {tab === "all" ? counts.all : counts[tab as keyof typeof counts]}
+                </span>
+              </TabsTrigger>
+            ))}
           </TabsList>
 
-          <TabsContent value={activeTab} className="space-y-4">
+          <TabsContent value={activeTab} className="space-y-6">
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              <div className="flex items-center justify-center py-24">
+                <div className="h-8 w-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : filteredQuotations.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <FileText className="h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900">
-                    No quotations found
-                  </h3>
-                  <p className="text-gray-500 mt-1">
-                    {activeTab === "all"
-                      ? "You haven't received any quotations yet."
-                      : `No ${statusLabels[activeTab]?.toLowerCase() || activeTab} quotations.`}
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 border-dashed">
+                <FileText className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">No quotations found</h3>
+                <p className="text-slate-500 mt-2">Check back later or browse products to request quotes.</p>
+              </div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid gap-6">
                 {filteredQuotations.map((quotation) => {
-                  const config =
-                    statusConfig[quotation.status] || statusConfig.SENT;
+                  const config = statusConfig[quotation.status] || statusConfig.SENT;
                   const StatusIcon = config.icon;
                   const isExpired = isPast(new Date(quotation.validUntil));
-                  const canTakeAction =
-                    quotation.status === "SENT" && !isExpired;
+                  const canTakeAction = quotation.status === "SENT" && !isExpired;
 
                   return (
-                    <Card
-                      key={quotation.id}
-                      className={`overflow-hidden border-l-4 ${config.border}`}
-                    >
-                      <CardHeader className={`${config.bg} py-4`}>
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                          <div className="flex items-center gap-3">
-                            <StatusIcon className={`h-5 w-5 ${config.text}`} />
+                    <Card key={quotation.id} className="group overflow-hidden border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-xl hover:border-sky-200 transition-all duration-300">
+                      {/* Status Strip */}
+                      <div className={cn("h-1.5 w-full", config.bg)} />
+
+                      <div className="p-6">
+                        {/* Header */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                          <div className="flex items-start gap-4">
+                            <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0 bg-slate-50", config.text.replace("text-", "bg-opacity-10 bg-"))}>
+                              <StatusIcon className="h-6 w-6" />
+                            </div>
                             <div>
-                              <CardTitle className="text-lg">
-                                {quotation.quotationNumber}
-                              </CardTitle>
-                              <p className="text-sm text-gray-600">
-                                Received{" "}
-                                {format(
-                                  new Date(quotation.createdAt),
-                                  "MMM dd, yyyy",
-                                )}
+                              <div className="flex items-center gap-3 mb-1">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-mono">
+                                  {quotation.quotationNumber}
+                                </h3>
+                                <Badge variant="secondary" className={cn("rounded-md border", config.badge)}>
+                                  {statusLabels[quotation.status]}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-slate-500">
+                                Received on {format(new Date(quotation.createdAt), "PPP")}
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <Badge className={config.badge}>
-                              {statusLabels[quotation.status]}
-                            </Badge>
-                            {quotation.status === "SENT" && (
-                              <Badge
-                                variant="outline"
-                                className={
-                                  isExpired
-                                    ? "border-red-300 text-red-700"
-                                    : "border-orange-300 text-orange-700"
-                                }
-                              >
-                                <Clock className="h-3 w-3 mr-1" />
-                                {isExpired
-                                  ? "Expired"
-                                  : `Valid for ${formatDistanceToNow(new Date(quotation.validUntil))}`}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </CardHeader>
 
-                      <CardContent className="py-4">
-                        {/* Vendor Info */}
-                        <div className="flex items-center gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
-                          <Building2 className="h-5 w-5 text-gray-500" />
-                          <div>
-                            <p className="font-medium text-sm">
-                              {quotation.vendor.companyName ||
-                                `${quotation.vendor.firstName || ""} ${quotation.vendor.lastName || ""}`.trim() ||
-                                "Vendor"}
-                            </p>
-                            {quotation.vendor.email && (
-                              <p className="text-xs text-gray-500">
-                                {quotation.vendor.email}
-                              </p>
-                            )}
+                          <div className="text-right">
+                            <div className="text-sm text-slate-500 mb-1">Total Amount</div>
+                            <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                              ₹{quotation.totalAmount.toLocaleString()}
+                            </div>
                           </div>
                         </div>
 
-                        {/* Items */}
-                        <div className="space-y-3 mb-4">
+                        {/* Content Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-6 mb-6 border border-slate-100 dark:border-slate-800">
+                          {/* Vendor */}
+                          <div className="md:col-span-4 flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600">
+                              {quotation.vendor.companyName?.[0] || "V"}
+                            </div>
+                            <div>
+                              <div className="text-xs text-slate-500 font-semibold uppercase">Vendor</div>
+                              <div className="font-medium">{quotation.vendor.companyName || "Service Provider"}</div>
+                            </div>
+                          </div>
+
+                          {/* Expiry */}
+                          <div className="md:col-span-4 flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600">
+                              <Clock className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <div className="text-xs text-slate-500 font-semibold uppercase">Validity</div>
+                              <div className={cn("font-medium", isExpired ? "text-red-600" : "")}>
+                                {isExpired ? "Expired" : formatDistanceToNow(new Date(quotation.validUntil), { addSuffix: true })}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Items Count */}
+                          <div className="md:col-span-4 flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600">
+                              <Package className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <div className="text-xs text-slate-500 font-semibold uppercase">Items</div>
+                              <div className="font-medium">{quotation.items.length} Product(s) Included</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Items Preview */}
+                        <div className="space-y-4">
                           {quotation.items.slice(0, 2).map((item) => (
-                            <div
-                              key={item.id}
-                              className="flex items-center gap-4 p-3 bg-white border rounded-lg"
-                            >
-                              <div className="relative w-16 h-16 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
-                                {item.productImage ? (
-                                  <Image
-                                    src={item.productImage}
-                                    alt={item.productName}
-                                    fill
-                                    className="object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <FileText className="h-6 w-6 text-gray-400" />
-                                  </div>
-                                )}
+                            <div key={item.id} className="flex items-center gap-4 py-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors rounded-lg px-2">
+                              <div className="h-12 w-12 rounded-lg bg-slate-100 relative overflow-hidden shrink-0">
+                                {item.productImage && <Image src={item.productImage} alt="" fill className="object-cover" />}
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate">
-                                  {item.productName}
-                                </p>
-                                <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                                  <Calendar className="h-3 w-3" />
-                                  <span>
-                                    {format(
-                                      new Date(item.rentalStartDate),
-                                      "MMM dd",
-                                    )}{" "}
-                                    -{" "}
-                                    {format(
-                                      new Date(item.rentalEndDate),
-                                      "MMM dd, yyyy",
-                                    )}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-gray-500">
-                                  Qty: {item.quantity} × ₹
-                                  {item.unitPrice.toLocaleString()}
-                                </p>
+                              <div className="flex-1">
+                                <div className="font-medium text-slate-900">{item.productName}</div>
+                                <div className="text-xs text-slate-500">Qty: {item.quantity} × ₹{item.unitPrice}</div>
                               </div>
-                              <div className="text-right">
-                                <p className="font-semibold">
-                                  ₹{item.totalPrice.toLocaleString()}
-                                </p>
-                              </div>
+                              <div className="font-semibold text-slate-900">₹{item.totalPrice.toLocaleString()}</div>
                             </div>
                           ))}
                           {quotation.items.length > 2 && (
-                            <p className="text-sm text-gray-500 text-center">
-                              +{quotation.items.length - 2} more item(s)
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Pricing Summary */}
-                        <div className="border-t pt-4 space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Subtotal</span>
-                            <span>₹{quotation.subtotal.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Tax (18%)</span>
-                            <span>₹{quotation.taxAmount.toLocaleString()}</span>
-                          </div>
-                          {quotation.securityDeposit > 0 && (
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">
-                                Security Deposit
-                              </span>
-                              <span>
-                                ₹{quotation.securityDeposit.toLocaleString()}
-                              </span>
+                            <div className="text-center text-xs text-slate-500 pt-2">
+                              +{quotation.items.length - 2} more items in this quotation
                             </div>
                           )}
-                          <div className="flex justify-between font-semibold text-lg pt-2 border-t">
-                            <span>Total</span>
-                            <span>
-                              ₹{quotation.totalAmount.toLocaleString()}
-                            </span>
-                          </div>
                         </div>
-
-                        {/* Notes */}
-                        {quotation.notes && (
-                          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                            <p className="text-sm text-yellow-800">
-                              <strong>Note:</strong> {quotation.notes}
-                            </p>
-                          </div>
-                        )}
 
                         {/* Actions */}
                         {canTakeAction && (
-                          <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                            <Button
-                              className="flex-1"
-                              onClick={() => handleAcceptAndPay(quotation.id)}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Accept & Pay ₹
-                              {quotation.totalAmount.toLocaleString()}
+                          <div className="mt-8 flex gap-3 pt-6 border-t border-slate-100">
+                            <Button className="flex-1 bg-sky-500 hover:bg-sky-600 text-white shadow-lg shadow-sky-500/20" onClick={() => handleAcceptAndPay(quotation.id)}>
+                              Accept Proposal <CheckCircle className="ml-2 h-4 w-4" />
                             </Button>
-
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  disabled={isPending}
-                                >
-                                  <XCircle className="h-4 w-4 mr-2" />
-                                  Reject Quotation
+                                <Button variant="outline" className="flex-1 border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200">
+                                  Decline <XCircle className="ml-2 h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    Reject this quotation?
-                                  </AlertDialogTitle>
+                                  <AlertDialogTitle>Reject Quotation?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to reject this
-                                    quotation? The vendor will be notified. This
-                                    action cannot be undone.
+                                    This will notify the vendor that you have declined their proposal. This action cannot be reversed.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleReject(quotation.id)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Yes, Reject
+                                  <AlertDialogAction onClick={() => handleReject(quotation.id)} className="bg-red-600 hover:bg-red-700">
+                                    Reject Quotation
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
                           </div>
                         )}
-
-                        {quotation.status === "CONFIRMED" && (
-                          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5 text-green-600" />
-                            <p className="text-sm text-green-800">
-                              You accepted this quotation. An order has been
-                              created.
-                            </p>
-                          </div>
-                        )}
-
-                        {isExpired && quotation.status === "SENT" && (
-                          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-                            <AlertCircle className="h-5 w-5 text-red-600" />
-                            <p className="text-sm text-red-800">
-                              This quotation has expired. Please contact the
-                              vendor for a new quotation.
-                            </p>
-                          </div>
-                        )}
-                      </CardContent>
+                      </div>
                     </Card>
                   );
                 })}

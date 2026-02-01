@@ -68,7 +68,7 @@ export function LoginForm() {
         } else if (data.role === "ADMIN") {
           router.push(callbackUrl || "/admin/dashboard");
         } else {
-          router.push(callbackUrl || DEFAULT_LOGIN_REDIRECT);
+          router.push(callbackUrl || "/products");
         }
       } catch (err: any) {
         toast.error("Invalid User ID or Password.", {

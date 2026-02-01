@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Package, Calendar, Eye } from "lucide-react";
+import { ChevronRight, Package, Calendar, Eye, Filter, Truck, CheckCircle2, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getOrders, cancelOrder } from "@/actions/orders";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface OrderItem {
   id: string;
@@ -47,31 +48,31 @@ const statusConfig: Record<
   { bg: string; border: string; text: string; badge: string }
 > = {
   draft: {
-    bg: "bg-gray-50",
-    border: "border-gray-200",
-    text: "text-gray-700",
-    badge: "bg-gray-100 text-gray-800",
+    bg: "bg-slate-400",
+    border: "border-slate-200",
+    text: "text-slate-700",
+    badge: "bg-slate-100 text-slate-800",
   },
   confirmed: {
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    text: "text-blue-700",
-    badge: "bg-blue-100 text-blue-800",
+    bg: "bg-sky-500",
+    border: "border-sky-200",
+    text: "text-sky-700",
+    badge: "bg-sky-100 text-sky-800",
   },
   "in-progress": {
-    bg: "bg-green-50",
+    bg: "bg-indigo-500",
+    border: "border-indigo-200",
+    text: "text-indigo-700",
+    badge: "bg-indigo-100 text-indigo-800",
+  },
+  completed: {
+    bg: "bg-green-500",
     border: "border-green-200",
     text: "text-green-700",
     badge: "bg-green-100 text-green-800",
   },
-  completed: {
-    bg: "bg-gray-50",
-    border: "border-gray-200",
-    text: "text-gray-700",
-    badge: "bg-gray-100 text-gray-800",
-  },
   cancelled: {
-    bg: "bg-red-50",
+    bg: "bg-red-500",
     border: "border-red-200",
     text: "text-red-700",
     badge: "bg-red-100 text-red-800",
@@ -81,7 +82,7 @@ const statusConfig: Record<
 const statusLabels: Record<string, string> = {
   draft: "Draft",
   confirmed: "Confirmed",
-  "in-progress": "In Progress",
+  "in-progress": "active",
   completed: "Completed",
   cancelled: "Cancelled",
 };
@@ -114,7 +115,8 @@ export default function OrdersPage() {
     router.push(`/orders/${orderId}`);
   };
 
-  const handleCancelOrder = async (orderId: string) => {
+  const handleCancelOrder = async (orderId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!confirm("Are you sure you want to cancel this order?")) return;
 
     startTransition(async () => {
@@ -123,7 +125,6 @@ export default function OrdersPage() {
         toast.success("Order cancelled successfully");
         fetchOrders();
       } else if ((result as { requiresRefund?: boolean }).requiresRefund) {
-        // Order has Razorpay payment, need to process refund
         try {
           const refundResponse = await fetch("/api/payment/refund", {
             method: "POST",
@@ -133,9 +134,7 @@ export default function OrdersPage() {
               reason: "Customer requested cancellation",
             }),
           });
-
           const refundData = await refundResponse.json();
-
           if (refundData.success) {
             toast.success(
               refundData.refund
@@ -160,175 +159,151 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold">My Orders</h1>
-          <p className="text-muted-foreground mt-2">
-            View and manage your rental orders
-          </p>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans pb-20">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
+        <div className="max-w-[1464px] mx-auto px-6 py-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">My Orders</h1>
+              <p className="text-slate-500 mt-1">Track and manage your rental history</p>
+            </div>
+            <Button variant="outline" className="gap-2">
+              <Filter className="h-4 w-4" /> Filter
+            </Button>
+          </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 mb-6">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="confirmed">Confirmed</TabsTrigger>
-            <TabsTrigger value="in-progress">In Progress</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+      <div className="max-w-[1464px] mx-auto px-6 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl h-auto flex-wrap">
+            {["all", "confirmed", "in-progress", "completed", "cancelled"].map((tab) => (
+              <TabsTrigger
+                key={tab}
+                value={tab}
+                className="flex-1 min-w-[100px] py-2.5 rounded-lg data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white capitalize font-medium"
+              >
+                {tab.replace("-", " ")}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
-          <TabsContent value={activeTab} className="space-y-4">
+          <TabsContent value={activeTab} className="space-y-6">
             {isLoading ? (
-              <div className="flex items-center justify-center min-h-64">
-                <div className="text-center space-y-3">
-                  <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                  <p className="text-muted-foreground">Loading orders...</p>
-                </div>
+              <div className="flex items-center justify-center py-24">
+                <div className="h-8 w-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : orders.length === 0 ? (
-              <Card>
-                <CardContent className="pt-12 pb-12 text-center">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold mb-2">No orders found</h3>
-                  <p className="text-muted-foreground mb-4">
-                    {activeTab === "all"
-                      ? "Start renting by browsing our products"
-                      : `No ${statusLabels[activeTab]?.toLowerCase() || activeTab} orders`}
-                  </p>
-                  <Button onClick={() => router.push("/products")}>
-                    Browse Products
-                  </Button>
-                </CardContent>
-              </Card>
+              <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 border-dashed">
+                <Package className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No orders found</h3>
+                <p className="text-slate-500 mb-6">Looks like you haven&apos;t placed any orders yet.</p>
+                <Button onClick={() => router.push("/products")} size="lg" className="bg-sky-500 hover:bg-sky-600">
+                  Browse Products
+                </Button>
+              </div>
             ) : (
-              orders.map((order) => {
-                const style = getStatusStyle(order.status);
-                const firstItem = order.items[0];
-                const rentalStart = firstItem
-                  ? new Date(firstItem.rentalStartDate)
-                  : null;
-                const rentalEnd = firstItem
-                  ? new Date(firstItem.rentalEndDate)
-                  : null;
+              <div className="grid gap-6">
+                {orders.map((order) => {
+                  const style = getStatusStyle(order.status);
+                  const firstItem = order.items[0];
 
-                return (
-                  <Card
-                    key={order.id}
-                    className={`${style.bg} ${style.border} border hover:shadow-md transition-shadow cursor-pointer`}
-                    onClick={() => handleViewOrder(order.id)}
-                  >
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <CardTitle className="text-lg">
-                            {order.orderNumber}
-                          </CardTitle>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${style.badge}`}
-                          >
-                            {statusLabels[order.status] || order.status}
-                          </span>
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Ordered on{" "}
-                        {format(new Date(order.createdAt), "MMM dd, yyyy")}
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Items Preview */}
-                      <div className="space-y-2">
-                        {order.items.slice(0, 2).map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex items-center gap-3"
-                          >
-                            <div className="w-12 h-12 bg-white rounded-md overflow-hidden flex-shrink-0 border">
-                              {item.productImage ? (
-                                <img
-                                  src={item.productImage}
-                                  alt={item.productName}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                                  No Image
-                                </div>
-                              )}
+                  return (
+                    <Card
+                      key={order.id}
+                      className="group overflow-hidden border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer"
+                      onClick={() => handleViewOrder(order.id)}
+                    >
+                      {/* Status Strip */}
+                      <div className={cn("h-1.5 w-full", style.bg)} />
+
+                      <div className="p-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800", style.text)}>
+                              <Package className="h-6 w-6" />
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate">
-                                {item.productName}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Qty: {item.quantity} × ₹
-                                {item.unitPrice.toLocaleString()}
-                              </p>
+                            <div>
+                              <div className="flex items-center gap-3 mb-1">
+                                <div className="text-lg font-bold text-slate-900 dark:text-white font-mono">{order.orderNumber}</div>
+                                <div className={cn("px-2.5 py-0.5 rounded-full text-xs font-bold border capitalize", style.badge.replace("bg-", "bg-opacity-20 bg-").replace("text-", "text-").replace(" border-", " border-"))}>
+                                  {statusLabels[order.status] || order.status}
+                                </div>
+                              </div>
+                              <div className="text-sm text-slate-500">
+                                Placed on {format(new Date(order.createdAt), "PPP")}
+                              </div>
                             </div>
                           </div>
-                        ))}
-                        {order.items.length > 2 && (
-                          <p className="text-sm text-muted-foreground">
-                            +{order.items.length - 2} more items
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Rental Period */}
-                      {rentalStart && rentalEnd && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span>
-                            {format(rentalStart, "MMM dd")} -{" "}
-                            {format(rentalEnd, "MMM dd, yyyy")}
-                          </span>
+                          <div className="text-right">
+                            <div className="text-sm text-slate-500 mb-1">Total Amount</div>
+                            <div className="text-2xl font-bold text-slate-900 dark:text-white">₹{order.totalAmount.toLocaleString()}</div>
+                          </div>
                         </div>
-                      )}
 
-                      {/* Footer */}
-                      <div className="flex items-center justify-between pt-3 border-t">
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Total Amount
-                          </p>
-                          <p className="font-bold text-lg">
-                            ₹{order.totalAmount.toLocaleString()}
-                          </p>
+                        {/* Content */}
+                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-800 mb-6">
+                          <div className="space-y-4">
+                            {order.items.slice(0, 2).map((item) => (
+                              <div key={item.id} className="flex gap-4 items-center">
+                                <div className="h-12 w-12 bg-white rounded-lg border border-slate-200 overflow-hidden relative shadow-sm">
+                                  {item.productImage ? (
+                                    <img src={item.productImage} alt="" className="w-full h-full object-cover" />
+                                  ) : <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">N/A</div>}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="font-medium text-slate-900 dark:text-white line-clamp-1">{item.productName}</div>
+                                  <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                                    <span>Qty: {item.quantity}</span>
+                                    <span>•</span>
+                                    {item.rentalStartDate && (
+                                      <span className="flex items-center gap-1">
+                                        <Calendar className="h-3 w-3" />
+                                        {format(new Date(item.rentalStartDate), "MMM dd")} - {format(new Date(item.rentalEndDate), "MMM dd")}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            {order.items.length > 2 && (
+                              <div className="text-center text-xs text-slate-500 font-medium">
+                                +{order.items.length - 2} more items...
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div
-                          className="flex gap-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewOrder(order.id)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View Details
-                          </Button>
-                          {(order.status === "draft" ||
-                            order.status === "confirmed") && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => handleCancelOrder(order.id)}
-                              disabled={isPending}
-                            >
-                              Cancel
+
+                        <div className="flex items-center justify-between pt-2">
+                          <div className="flex items-center gap-2 text-sm text-slate-500">
+                            {order.status === 'in-progress' && (
+                              <>
+                                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                                <span>Rental Active</span>
+                              </>
+                            )}
+                          </div>
+                          <div className="flex gap-3">
+                            {(order.status === "draft" || order.status === "confirmed") && (
+                              <Button
+                                variant="ghost"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={(e) => handleCancelOrder(order.id, e)}
+                                disabled={isPending}
+                              >
+                                Cancel Order
+                              </Button>
+                            )}
+                            <Button variant="outline" className="border-sky-200 text-sky-600 hover:bg-sky-50 group-hover:border-sky-500 group-hover:bg-sky-500 group-hover:text-white transition-all">
+                              View Details <ChevronRight className="ml-2 h-4 w-4" />
                             </Button>
-                          )}
+                          </div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
+                    </Card>
+                  );
+                })}
+              </div>
             )}
           </TabsContent>
         </Tabs>
