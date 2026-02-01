@@ -1,4 +1,4 @@
-# Rental Management System
+# Leaseo - Rental Management System
 
 A full-featured Rental Management System that enables businesses to rent products online while managing quotations, rental orders, inventory, invoicing, pickups, returns, and reporting.
 
@@ -141,12 +141,3 @@ Open http://localhost:3000
 
 ## Contribution
 - Fork → branch → PR. Follow linting and TypeScript checks, provide tests for core reservation and payment paths.
-
----
-
-If you want, I can:
-- Create a `README.rental.md` file in the repository (done),
-- Scaffold initial routes & server actions for quotations and reservation logic, or
-- Generate a small migration and seed data for testing reservations.
-
-Which next step would you like me to take? 🔧
