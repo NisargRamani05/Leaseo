@@ -11,6 +11,7 @@ import {
   ShoppingCart,
   Package,
 } from "lucide-react";
+import { ProductFilterSidebar } from "@/components/products/ProductFilterSidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -70,6 +71,26 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState("name-asc");
   const [priceRange, setPriceRange] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [color, setColor] = useState("all");
+  const [duration, setDuration] = useState("all");
+
+  // Filter State Wrapper for Sidebar
+  const filters = {
+    search,
+    category: selectedCategory,
+    priceRange,
+    color,
+    duration,
+  };
+
+  const handleSetFilters = (newFilters: any) => {
+    if (newFilters.search !== undefined) setSearch(newFilters.search);
+    if (newFilters.category !== undefined) setSelectedCategory(newFilters.category);
+    if (newFilters.priceRange !== undefined) setPriceRange(newFilters.priceRange);
+    if (newFilters.color !== undefined) setColor(newFilters.color);
+    if (newFilters.duration !== undefined) setDuration(newFilters.duration);
+  };
 
   useEffect(() => {
     fetchData();
@@ -84,30 +105,30 @@ export default function ProductsPage() {
         "asc" | "desc",
       ];
 
+      // Parse dynamic price range "min-max"
+      let minPrice: number | undefined = undefined;
+      let maxPrice: number | undefined = undefined;
+
+      if (priceRange !== "all") {
+        const [min, max] = priceRange.split("-").map(Number);
+        if (!isNaN(min)) minPrice = min;
+        if (!isNaN(max)) maxPrice = max;
+      }
+
       const [productsData, categoriesData, wishlistData] = await Promise.all([
         getProducts({
           search,
           categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
           sortBy: sortBy,
-          minPrice:
-            priceRange === "0-500"
-              ? 0
-              : priceRange === "500-1000"
-                ? 500
-                : priceRange === "1000+"
-                  ? 1000
-                  : undefined,
-          maxPrice:
-            priceRange === "0-500"
-              ? 500
-              : priceRange === "500-1000"
-                ? 1000
-                : undefined,
+          minPrice,
+          maxPrice,
         }),
         getCategories(),
         getWishlist(),
       ]);
 
+      // Client-side filtering for mock attributes (Color/Duration) if implementation needed
+      // For now, we return server filtered data
       setProducts(productsData);
       setCategories(categoriesData);
       setWishlistIds(new Set(wishlistData.map((item) => item.productId)));
@@ -163,191 +184,90 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans">
       {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold">Products</h1>
-          <p className="text-muted-foreground mt-2">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
+        <div className="w-full max-w-[1400px] mx-auto px-6 py-6">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Products</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-2">
             Browse our collection of rental items
           </p>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search products..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+      <div className="w-full max-w-[1400px] mx-auto px-6 py-8 flex items-start gap-8 relative">
+        <ProductFilterSidebar
+          isOpen={isSidebarOpen}
+          toggleOpen={() => setIsSidebarOpen(!isSidebarOpen)}
+          categories={categories}
+          filters={filters}
+          setFilters={handleSetFilters}
+        />
 
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.slug}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex-1 w-full min-w-0">
+          {/* Top Bar: Sort & View Mode */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="text-sm text-slate-500 dark:text-slate-400">
+              Showing <span className="font-semibold text-slate-900 dark:text-white">{products.length}</span> results
+            </div>
 
-          <Select value={priceRange} onValueChange={setPriceRange}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="Price Range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Prices</SelectItem>
-              <SelectItem value="0-500">₹0 - ₹500</SelectItem>
-              <SelectItem value="500-1000">₹500 - ₹1000</SelectItem>
-              <SelectItem value="1000+">₹1000+</SelectItem>
-            </SelectContent>
-          </Select>
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full md:w-48 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name-asc">Name A-Z</SelectItem>
+                  <SelectItem value="name-desc">Name Z-A</SelectItem>
+                  <SelectItem value="price-asc">Price Low to High</SelectItem>
+                  <SelectItem value="price-desc">Price High to Low</SelectItem>
+                  <SelectItem value="createdAt-desc">Newest First</SelectItem>
+                </SelectContent>
+              </Select>
 
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name-asc">Name A-Z</SelectItem>
-              <SelectItem value="name-desc">Name Z-A</SelectItem>
-              <SelectItem value="price-asc">Price Low to High</SelectItem>
-              <SelectItem value="price-desc">Price High to Low</SelectItem>
-              <SelectItem value="createdAt-desc">Newest First</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <div className="flex gap-2">
-            <Button
-              variant={viewMode === "grid" ? "default" : "outline"}
-              size="icon"
-              onClick={() => setViewMode("grid")}
-            >
-              <Grid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === "list" ? "default" : "outline"}
-              size="icon"
-              onClick={() => setViewMode("list")}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Products Grid/List */}
-        {products.length === 0 ? (
-          <div className="text-center py-16">
-            <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h2 className="text-xl font-semibold mb-2">No products found</h2>
-            <p className="text-muted-foreground">
-              Try adjusting your search or filters
-            </p>
-          </div>
-        ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => {
-              const primaryImage =
-                product.images.find((img) => img.isPrimary) ||
-                product.images[0];
-              return (
-                <Card
-                  key={product.id}
-                  className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => handleProductClick(product.slug)}
+              <div className="flex gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setViewMode("grid")}
+                  className={viewMode === "grid" ? "bg-white dark:bg-slate-700 shadow-sm text-sky-500" : "text-slate-500"}
                 >
-                  <div className="aspect-square bg-muted relative">
-                    {primaryImage ? (
-                      <img
-                        src={primaryImage.url}
-                        alt={primaryImage.alt || product.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="h-12 w-12 text-muted-foreground opacity-50" />
-                      </div>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={`absolute top-2 right-2 rounded-full bg-white/80 hover:bg-white ${
-                        wishlistIds.has(product.id) ? "text-red-500" : ""
-                      }`}
-                      onClick={(e) => handleWishlistToggle(product.id, e)}
-                      disabled={isPending}
-                    >
-                      <Heart
-                        className={`h-4 w-4 ${wishlistIds.has(product.id) ? "fill-current" : ""}`}
-                      />
-                    </Button>
-                    {product.quantity <= 3 && product.quantity > 0 && (
-                      <span className="absolute bottom-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded">
-                        Only {product.quantity} left
-                      </span>
-                    )}
-                    {product.quantity === 0 && (
-                      <span className="absolute bottom-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
-                        Out of stock
-                      </span>
-                    )}
-                  </div>
-                  <CardContent className="p-4">
-                    {product.category && (
-                      <p className="text-xs text-muted-foreground mb-1">
-                        {product.category.name}
-                      </p>
-                    )}
-                    <h3 className="font-semibold line-clamp-1">
-                      {product.name}
-                    </h3>
-                    {product.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                        {product.description}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between mt-3">
-                      <div>
-                        <span className="text-lg font-bold text-primary">
-                          ₹{product.basePrice}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          /day
-                        </span>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        <ShoppingCart className="h-4 w-4 mr-1" />
-                        Rent
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {products.map((product) => {
-              const primaryImage =
-                product.images.find((img) => img.isPrimary) ||
-                product.images[0];
-              return (
-                <Card
-                  key={product.id}
-                  className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => handleProductClick(product.slug)}
+                  <Grid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setViewMode("list")}
+                  className={viewMode === "list" ? "bg-white dark:bg-slate-700 shadow-sm text-sky-500" : "text-slate-500"}
                 >
-                  <div className="flex">
-                    <div className="w-48 h-48 bg-muted relative shrink-0">
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Products Grid/List */}
+          {products.length === 0 ? (
+            <div className="text-center py-16">
+              <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <h2 className="text-xl font-semibold mb-2">No products found</h2>
+              <p className="text-muted-foreground">
+                Try adjusting your search or filters
+              </p>
+            </div>
+          ) : viewMode === "grid" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {products.map((product) => {
+                const primaryImage =
+                  product.images.find((img) => img.isPrimary) ||
+                  product.images[0];
+                return (
+                  <Card
+                    key={product.id}
+                    className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => handleProductClick(product.slug)}
+                  >
+                    <div className="aspect-square bg-muted relative">
                       {primaryImage ? (
                         <img
                           src={primaryImage.url}
@@ -359,59 +279,141 @@ export default function ProductsPage() {
                           <Package className="h-12 w-12 text-muted-foreground opacity-50" />
                         </div>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`absolute top-2 right-2 rounded-full bg-white/80 hover:bg-white ${wishlistIds.has(product.id) ? "text-red-500" : ""
+                          }`}
+                        onClick={(e) => handleWishlistToggle(product.id, e)}
+                        disabled={isPending}
+                      >
+                        <Heart
+                          className={`h-4 w-4 ${wishlistIds.has(product.id) ? "fill-current" : ""}`}
+                        />
+                      </Button>
+                      {product.quantity <= 3 && product.quantity > 0 && (
+                        <span className="absolute bottom-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded">
+                          Only {product.quantity} left
+                        </span>
+                      )}
+                      {product.quantity === 0 && (
+                        <span className="absolute bottom-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                          Out of stock
+                        </span>
+                      )}
                     </div>
-                    <CardContent className="flex-1 p-4 flex flex-col justify-between">
-                      <div>
-                        {product.category && (
-                          <p className="text-xs text-muted-foreground mb-1">
-                            {product.category.name}
-                          </p>
-                        )}
-                        <h3 className="font-semibold text-lg">
-                          {product.name}
-                        </h3>
-                        {product.description && (
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                            {product.description}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between mt-4">
+                    <CardContent className="p-4">
+                      {product.category && (
+                        <p className="text-xs text-muted-foreground mb-1">
+                          {product.category.name}
+                        </p>
+                      )}
+                      <h3 className="font-semibold line-clamp-1">
+                        {product.name}
+                      </h3>
+                      {product.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                          {product.description}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between mt-3">
                         <div>
-                          <span className="text-xl font-bold text-primary">
+                          <span className="text-lg font-bold text-primary">
                             ₹{product.basePrice}
                           </span>
                           <span className="text-sm text-muted-foreground">
                             /day
                           </span>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className={
-                              wishlistIds.has(product.id) ? "text-red-500" : ""
-                            }
-                            onClick={(e) => handleWishlistToggle(product.id, e)}
-                            disabled={isPending}
-                          >
-                            <Heart
-                              className={`h-5 w-5 ${wishlistIds.has(product.id) ? "fill-current" : ""}`}
-                            />
-                          </Button>
-                          <Button>
-                            <ShoppingCart className="h-4 w-4 mr-2" />
-                            Rent Now
-                          </Button>
-                        </div>
+                        <Button size="sm" className="bg-sky-500 hover:bg-sky-600 text-white">
+                          <ShoppingCart className="h-4 w-4 mr-1" />
+                          Rent
+                        </Button>
                       </div>
                     </CardContent>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {products.map((product) => {
+                const primaryImage =
+                  product.images.find((img) => img.isPrimary) ||
+                  product.images[0];
+                return (
+                  <Card
+                    key={product.id}
+                    className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => handleProductClick(product.slug)}
+                  >
+                    <div className="flex">
+                      <div className="w-48 h-48 bg-muted relative shrink-0">
+                        {primaryImage ? (
+                          <img
+                            src={primaryImage.url}
+                            alt={primaryImage.alt || product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="h-12 w-12 text-muted-foreground opacity-50" />
+                          </div>
+                        )}
+                      </div>
+                      <CardContent className="flex-1 p-4 flex flex-col justify-between">
+                        <div>
+                          {product.category && (
+                            <p className="text-xs text-muted-foreground mb-1">
+                              {product.category.name}
+                            </p>
+                          )}
+                          <h3 className="font-semibold text-lg">
+                            {product.name}
+                          </h3>
+                          {product.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {product.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between mt-4">
+                          <div>
+                            <span className="text-xl font-bold text-primary">
+                              ₹{product.basePrice}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              /day
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={
+                                wishlistIds.has(product.id) ? "text-red-500" : ""
+                              }
+                              onClick={(e) => handleWishlistToggle(product.id, e)}
+                              disabled={isPending}
+                            >
+                              <Heart
+                                className={`h-5 w-5 ${wishlistIds.has(product.id) ? "fill-current" : ""}`}
+                              />
+                            </Button>
+                            <Button className="bg-sky-500 hover:bg-sky-600 text-white">
+                              <ShoppingCart className="h-4 w-4 mr-2" />
+                              Rent Now
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

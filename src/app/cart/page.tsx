@@ -92,10 +92,10 @@ export default function CartPage() {
           prev.map((item) =>
             item.id === itemId
               ? {
-                  ...item,
-                  quantity: newQuantity,
-                  totalPrice: item.unitPrice * newQuantity,
-                }
+                ...item,
+                quantity: newQuantity,
+                totalPrice: item.unitPrice * newQuantity,
+              }
               : item,
           ),
         );

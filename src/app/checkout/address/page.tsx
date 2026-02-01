@@ -192,20 +192,18 @@ export default function CheckoutAddressPage() {
                       <div
                         key={address.id}
                         onClick={() => setSelectedAddressId(address.id)}
-                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                          selectedAddressId === address.id
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedAddressId === address.id
                             ? "border-primary bg-primary/5"
                             : "border-input hover:border-primary/50"
-                        }`}
+                          }`}
                       >
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-3">
                             <div
-                              className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                                selectedAddressId === address.id
+                              className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${selectedAddressId === address.id
                                   ? "border-primary bg-primary"
                                   : "border-input"
-                              }`}
+                                }`}
                             >
                               {selectedAddressId === address.id && (
                                 <div className="h-2 w-2 bg-white rounded-full" />

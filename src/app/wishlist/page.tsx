@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, ShoppingCart, ArrowLeft, Heart } from "lucide-react";
+import { Trash2, ShoppingCart, ArrowLeft, Heart, Package, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getWishlist, removeFromWishlist } from "@/actions/wishlist";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface WishlistItem {
   id: string;
@@ -44,7 +45,8 @@ export default function WishlistPage() {
     }
   };
 
-  const handleRemoveFromWishlist = (id: string) => {
+  const handleRemoveFromWishlist = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     startTransition(async () => {
       const result = await removeFromWishlist(id);
       if (result.success) {
@@ -56,7 +58,8 @@ export default function WishlistPage() {
     });
   };
 
-  const handleAddToCart = (slug: string) => {
+  const handleAddToCart = (slug: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     router.push(`/products/${slug}?action=add-to-cart`);
   };
 
@@ -66,175 +69,124 @@ export default function WishlistPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Loading wishlist...</p>
-        </div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="h-10 w-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-6">
-          <Button
-            variant="ghost"
-            onClick={() => router.back()}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans w-full  pb-20">
+
+      {/* Header */}
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
+        <div className="max-w-[1464px] mx-auto px-6 py-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.back()}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                My Wishlist
+                <span className="text-sm font-normal text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                  {wishlistItems.length}
+                </span>
+              </h1>
+            </div>
+          </div>
+          <Button variant="outline" onClick={() => router.push("/products")}>
             Continue Shopping
           </Button>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Heart className="h-8 w-8 text-red-500 fill-red-500" />
-            My Wishlist
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            {wishlistItems.length} items in your wishlist
-          </p>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-[1464px] mx-auto px-6 py-8">
+
         {wishlistItems.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent className="space-y-4">
-              <Heart className="h-12 w-12 text-muted-foreground mx-auto opacity-50" />
-              <h2 className="text-xl font-semibold">Your wishlist is empty</h2>
-              <p className="text-muted-foreground">
-                Add items to your wishlist to save them for later
-              </p>
-              <Button onClick={() => router.push("/products")}>
-                Continue Shopping
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="h-24 w-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
+              <Heart className="h-10 w-10 text-slate-300 dark:text-slate-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Your wishlist is empty</h2>
+            <p className="text-slate-500 max-w-md mb-8">Save items you want to rent later by clicking the heart icon on any product.</p>
+            <Button size="lg" className="bg-sky-500 hover:bg-sky-600" onClick={() => router.push("/products")}>
+              Explore Products
+            </Button>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {wishlistItems.map((item) => (
-              <Card
+              <div
                 key={item.id}
-                className="overflow-hidden hover:shadow-lg transition-shadow"
+                onClick={() => handleViewProduct(item.slug)}
+                className="group relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
               >
-                {/* Image */}
-                <div className="relative h-48 bg-gray-200 overflow-hidden group">
+                {/* Image Area */}
+                <div className="aspect-square bg-slate-100 dark:bg-slate-800 relative overflow-hidden">
                   {item.image ? (
                     <img
                       src={item.image}
                       alt={item.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform cursor-pointer"
-                      onClick={() => handleViewProduct(item.slug)}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div
-                      className="w-full h-full flex items-center justify-center text-muted-foreground cursor-pointer"
-                      onClick={() => handleViewProduct(item.slug)}
-                    >
-                      No Image
+                    <div className="w-full h-full flex items-center justify-center text-slate-400">
+                      <Package className="h-10 w-10 opacity-50" />
                     </div>
                   )}
-                  <div className="absolute top-2 right-2">
+
+                  {/* Floating Actions */}
+                  <div className="absolute top-3 right-3 flex flex-col gap-2">
                     <Button
-                      variant="outline"
+                      variant="secondary"
                       size="icon"
-                      className="bg-white hover:bg-red-50"
-                      onClick={() => handleRemoveFromWishlist(item.id)}
-                      disabled={isPending}
+                      className="h-8 w-8 rounded-full bg-white/90 hover:bg-red-50 text-slate-400 hover:text-red-500 shadow-sm backdrop-blur-sm"
+                      onClick={(e) => handleRemoveFromWishlist(item.id, e)}
                     >
-                      <Heart className="h-4 w-4 text-red-500 fill-red-500" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
 
-                  {/* Stock Badge */}
                   {!item.inStock && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold">
-                        Out of Stock
-                      </span>
+                    <div className="absolute bottom-0 left-0 right-0 bg-red-500/90 text-white text-xs font-bold py-1 text-center backdrop-blur-sm">
+                      OUT OF STOCK
                     </div>
                   )}
                 </div>
 
-                {/* Content */}
-                <CardContent className="p-4 space-y-3">
-                  {/* Title */}
-                  <h3
-                    className="font-semibold line-clamp-2 hover:text-primary cursor-pointer"
-                    onClick={() => handleViewProduct(item.slug)}
-                  >
-                    {item.name}
-                  </h3>
-
-                  {/* Rating */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">⭐ {item.rating.toFixed(1)}</span>
-                    <span className="text-xs text-muted-foreground">
-                      ({item.reviews} reviews)
-                    </span>
-                  </div>
-
-                  {/* Price */}
-                  <div className="space-y-1">
-                    <div className="text-2xl font-bold text-primary">
-                      ₹{item.basePrice.toLocaleString()}/day
+                {/* Content Area */}
+                <div className="p-5 space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-lg text-slate-900 dark:text-white truncate group-hover:text-sky-500 transition-colors">
+                      {item.name}
+                    </h3>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                      <span className="text-sm font-medium">{item.rating.toFixed(1)}</span>
+                      <span className="text-xs text-slate-400">({item.reviews})</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      or flexible rental periods
-                    </p>
                   </div>
 
-                  {/* Actions */}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div className="text-xl font-bold">
+                      ₹{item.basePrice}
+                      <span className="text-xs font-normal text-slate-400 ml-1">/day</span>
+                    </div>
                     <Button
-                      variant="outline"
-                      onClick={() => handleViewProduct(item.slug)}
-                      className="w-full"
-                    >
-                      View Details
-                    </Button>
-                    <Button
-                      onClick={() => handleAddToCart(item.slug)}
+                      size="sm"
                       disabled={!item.inStock}
-                      className="w-full"
+                      onClick={(e) => handleAddToCart(item.slug, e)}
+                      className={cn("rounded-lg", item.inStock ? "bg-sky-500 hover:bg-sky-600" : "opacity-50")}
                     >
-                      <ShoppingCart className="h-4 w-4 mr-1" />
-                      Add
+                      <ShoppingCart className="h-4 w-4" />
                     </Button>
                   </div>
-
-                  <p className="text-xs text-muted-foreground italic">
-                    Click "Add" to move to cart
-                  </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         )}
       </div>
-
-      {/* Bottom Info */}
-      {wishlistItems.length > 0 && (
-        <div className="border-t bg-gray-50 py-4">
-          <div className="container mx-auto px-4 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {wishlistItems.length} items •
-              <span className="font-semibold ml-1">
-                Avg: ₹
-                {Math.round(
-                  wishlistItems.reduce((sum, item) => sum + item.basePrice, 0) /
-                    wishlistItems.length,
-                ).toLocaleString()}
-                /day
-              </span>
-            </p>
-            <Button onClick={() => router.push("/products")}>
-              Continue Shopping
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
